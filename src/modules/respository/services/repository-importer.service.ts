@@ -5,14 +5,27 @@ import type {
     RepositoryImportRequest,
     RepositoryImportResult
 } from "../types/repository.types.js";
+import {
+    WorkspaceManagerService
+} from "./workspace-manager.service.js";
+
+
 
 export class RepositoryImporterService {
+
+    private workspaceManager: WorkspaceManagerService;
+
+    constructor() {
+        this.workspaceManager = new WorkspaceManagerService();
+    }
 
     async importRepository(
         request: RepositoryImportRequest
     ): Promise<RepositoryImportResult> {
 
-        console.log("Starting repository import...");
+        console.log("\n=================================");
+        console.log("STARTING REPOSITORY IMPORT");
+        console.log("=================================");
 
         // 1. Validate request
         if (!request.sourceType) {
@@ -29,11 +42,15 @@ export class RepositoryImporterService {
         // 3. Determine project name
         const projectName = this.getProjectName(request.source);
 
-        // 4. Create expected workspace path
-        const workspacePath = path.join(
-            "storage",
-            "workspaces",
+         // ----------------------------------------
+        // 4. Create project workspace
+        // ----------------------------------------
+
+        const workspace = await this.workspaceManager.createWorkspace(
             projectId
+        );
+        console.log(
+            `Workspace created successfully for ${projectId}`
         );
 
         // 5. Route according to source type
@@ -55,19 +72,35 @@ export class RepositoryImporterService {
                 throw new Error("Unsupported repository source type");
         }
 
-        // 6. Temporary result
+         // ----------------------------------------
+        // 6. Create standardized result
+        // ----------------------------------------
+
         const result: RepositoryImportResult = {
+
             projectId,
+
             projectName,
+
             sourceType: request.sourceType,
+
             status: "imported",
-            workspacePath,
+
+            workspacePath: workspace.workspacePath,
+
             importedAt: new Date().toISOString(),
-            message: "Repository import request processed successfully"
+
+            message:
+                "Repository workspace created successfully"
+
         };
 
         return result;
     }
+    
+    // ----------------------------------------
+    // Generate unique project ID
+    // ----------------------------------------
 
     private generateProjectId(): string {
 
@@ -78,6 +111,10 @@ export class RepositoryImporterService {
 
         return `PRJ-${randomId}`;
     }
+
+    // ----------------------------------------
+    // Extract project name
+    // ----------------------------------------
 
     private getProjectName(source: string): string {
 
