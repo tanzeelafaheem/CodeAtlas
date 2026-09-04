@@ -5,19 +5,27 @@ import type {
     RepositoryImportRequest,
     RepositoryImportResult
 } from "../types/repository.types.js";
-import {
-    WorkspaceManagerService
-} from "./workspace-manager.service.js";
 
+import { WorkspaceManagerService } from "./workspace-manager.service.js";
+import { GitClonerService } from "./git-cloner.service.js";
 
 
 export class RepositoryImporterService {
 
     private workspaceManager: WorkspaceManagerService;
 
+    private gitCloner: GitClonerService;
+
+
     constructor() {
-        this.workspaceManager = new WorkspaceManagerService();
+
+        this.workspaceManager =
+            new WorkspaceManagerService();
+
+        this.gitCloner =
+            new GitClonerService();
     }
+
 
     async importRepository(
         request: RepositoryImportRequest
@@ -27,103 +35,233 @@ export class RepositoryImporterService {
         console.log("STARTING REPOSITORY IMPORT");
         console.log("=================================");
 
+
+        // ----------------------------------------
         // 1. Validate request
+        // ----------------------------------------
+
         if (!request.sourceType) {
-            throw new Error("Repository source type is required");
+
+            throw new Error(
+                "Repository source type is required"
+            );
         }
+
 
         if (!request.source) {
-            throw new Error("Repository source is required");
+
+            throw new Error(
+                "Repository source is required"
+            );
         }
 
-        // 2. Generate unique project ID
-        const projectId = this.generateProjectId();
 
-        // 3. Determine project name
-        const projectName = this.getProjectName(request.source);
-
-         // ----------------------------------------
-        // 4. Create project workspace
+        // ----------------------------------------
+        // 2. Generate Project ID
         // ----------------------------------------
 
-        const workspace = await this.workspaceManager.createWorkspace(
-            projectId
-        );
+        const projectId =
+            this.generateProjectId();
+
         console.log(
-            `Workspace created successfully for ${projectId}`
+            `Generated Project ID: ${projectId}`
         );
 
-        // 5. Route according to source type
-        switch (request.sourceType) {
 
-            case "git":
-                console.log("Routing request to Git Repository Cloner...");
-                break;
-
-            case "zip":
-                console.log("Routing request to ZIP Extractor...");
-                break;
-
-            case "local":
-                console.log("Routing request to Local Directory Importer...");
-                break;
-
-            default:
-                throw new Error("Unsupported repository source type");
-        }
-
-         // ----------------------------------------
-        // 6. Create standardized result
+        // ----------------------------------------
+        // 3. Determine Project Name
         // ----------------------------------------
 
-        const result: RepositoryImportResult = {
+        const projectName =
+            this.getProjectName(request.source);
 
-            projectId,
+        console.log(
+            `Project Name: ${projectName}`
+        );
 
-            projectName,
 
-            sourceType: request.sourceType,
+        // ----------------------------------------
+        // 4. Create Workspace
+        // ----------------------------------------
 
-            status: "imported",
+        const workspace =
+            await this.workspaceManager.createWorkspace(
+                projectId
+            );
 
-            workspacePath: workspace.workspacePath,
+        console.log(
+            `Workspace created for ${projectId}`
+        );
 
-            importedAt: new Date().toISOString(),
 
-            message:
-                "Repository workspace created successfully"
+        // ----------------------------------------
+        // 5. Import Repository
+        // ----------------------------------------
 
-        };
+        try {
 
-        return result;
+            switch (request.sourceType) {
+
+                // ==================================
+                // GIT
+                // ==================================
+
+                case "git":
+
+                    console.log(
+                        "\nRouting to Git Repository Cloner..."
+                    );
+
+
+                    await this.gitCloner.cloneRepository(
+
+                        request.source,
+
+                        workspace.repositoryPath,
+
+                        {
+                            branch: request.branch,
+                            tag: request.tag,
+                            commit: request.commit,
+                            shallow: request.shallow
+                        }
+                    );
+
+                    break;
+
+
+                // ==================================
+                // ZIP
+                // ==================================
+
+                case "zip":
+
+                    console.log(
+                        "ZIP Extractor will be implemented next."
+                    );
+
+                    break;
+
+
+                // ==================================
+                // LOCAL
+                // ==================================
+
+                case "local":
+
+                    console.log(
+                        "Local Directory Importer will be implemented next."
+                    );
+
+                    break;
+
+
+                // ==================================
+                // INVALID TYPE
+                // ==================================
+
+                default:
+
+                    throw new Error(
+                        "Unsupported repository source type"
+                    );
+            }
+
+
+            // ----------------------------------------
+            // 6. Successful result
+            // ----------------------------------------
+
+            const result: RepositoryImportResult = {
+
+                projectId,
+
+                projectName,
+
+                sourceType: request.sourceType,
+
+                status: "imported",
+
+                workspacePath:
+                    workspace.workspacePath,
+
+                repositoryPath:
+                    workspace.repositoryPath,
+
+                importedAt:
+                    new Date().toISOString(),
+
+                message:
+                    "Repository imported successfully"
+            };
+
+
+            return result;
+
+
+        } catch (error) {
+
+            console.error(
+                "\nRepository import failed."
+            );
+
+
+            const message =
+                error instanceof Error
+                    ? error.message
+                    : "Unknown import error";
+
+
+            console.error(
+                `Reason: ${message}`
+            );
+
+
+            throw new Error(
+                `Repository import failed: ${message}`
+            );
+        }
     }
-    
+
+
     // ----------------------------------------
-    // Generate unique project ID
+    // Generate Project ID
     // ----------------------------------------
 
     private generateProjectId(): string {
 
-        const randomId = crypto
-            .randomBytes(3)
-            .toString("hex")
-            .toUpperCase();
+        const randomId =
+            crypto
+                .randomBytes(3)
+                .toString("hex")
+                .toUpperCase();
+
 
         return `PRJ-${randomId}`;
     }
 
+
     // ----------------------------------------
-    // Extract project name
+    // Extract Project Name
     // ----------------------------------------
 
-    private getProjectName(source: string): string {
+    private getProjectName(
+        source: string
+    ): string {
 
-        const cleanSource = source
-            .replace(/\\/g, "/")
-            .replace(/\/$/, "");
+        const cleanSource =
+            source
+                .replace(/\\/g, "/")
+                .replace(/\/$/, "");
 
-        const name = path.basename(cleanSource);
 
-        return name.replace(/\.git$/, "");
+        const name =
+            path.basename(cleanSource);
+
+
+        return name.replace(
+            /\.git$/,
+            ""
+        );
     }
 }
