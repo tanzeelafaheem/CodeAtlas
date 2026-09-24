@@ -8,23 +8,29 @@ import type {
 
 import { WorkspaceManagerService } from "./workspace-manager.service.js";
 import { GitClonerService } from "./git-cloner.service.js";
+import { ZipExtractorService } from "./zip-extractor.service.js";
 
 
 export class RepositoryImporterService {
 
-    private workspaceManager: WorkspaceManagerService;
+   private workspaceManager: WorkspaceManagerService;
 
-    private gitCloner: GitClonerService;
+   private gitCloner: GitClonerService;
+
+   private zipExtractor: ZipExtractorService;
 
 
-    constructor() {
+  constructor() {
 
-        this.workspaceManager =
-            new WorkspaceManagerService();
+    this.workspaceManager =
+        new WorkspaceManagerService();
 
-        this.gitCloner =
-            new GitClonerService();
-    }
+    this.gitCloner =
+        new GitClonerService();
+
+    this.zipExtractor =
+        new ZipExtractorService();
+}
 
 
     async importRepository(
@@ -135,12 +141,11 @@ export class RepositoryImporterService {
                 // ==================================
 
                 case "zip":
-
-                    console.log(
-                        "ZIP Extractor will be implemented next."
-                    );
-
-                    break;
+              console.log("\nRouting to ZIP Extractor...");
+                await this.zipExtractor.extractZip(
+                     request.source,
+                     workspace.repositoryPath);
+                   break;
 
 
                 // ==================================
@@ -252,7 +257,7 @@ export class RepositoryImporterService {
         const cleanSource =
             source
                 .replace(/\\/g, "/")
-                .replace(/\/$/, "");
+                .replace(/\.zip$/i, "");
 
 
         const name =
