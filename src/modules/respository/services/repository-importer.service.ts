@@ -12,6 +12,12 @@ import { ZipExtractorService } from "./zip-extractor.service.js";
 import {
     LocalDirectoryImporterService
 } from "./local-directory-importer.service.js";
+import {
+    RepositoryValidatorService
+} from "./repository-validator.service.js";
+import {
+    RepositoryMetadataService
+} from "./repository-metadata.service.js";
 
 
 export class RepositoryImporterService {
@@ -22,8 +28,10 @@ export class RepositoryImporterService {
 
    private zipExtractor: ZipExtractorService;
 
-   private localDirectoryImporter:
-    LocalDirectoryImporterService;
+   private localDirectoryImporter:LocalDirectoryImporterService;
+
+    private repositoryValidator:RepositoryValidatorService;
+   private repositoryMetadataService:RepositoryMetadataService;
 
   constructor() {
 
@@ -38,6 +46,8 @@ export class RepositoryImporterService {
 
     this.localDirectoryImporter =
         new LocalDirectoryImporterService();
+    this.repositoryValidator=new RepositoryValidatorService
+    this.repositoryMetadataService=new RepositoryMetadataService
 }
 
 
@@ -187,6 +197,36 @@ export class RepositoryImporterService {
                         "Unsupported repository source type"
                     );
             }
+            // ----------------------------------------
+// Validate imported repository
+// ----------------------------------------
+
+console.log(
+    "\nStarting repository validation..."
+);
+
+
+const validationReport =
+    await this.repositoryValidator.validateRepository(
+        workspace.repositoryPath
+    );
+
+
+// ----------------------------------------
+// Create repository metadata
+// ----------------------------------------
+
+const metadata =
+    this.repositoryMetadataService.createMetadata(
+
+        projectId,
+
+        projectName,
+
+        request,
+
+        validationReport
+    );
 
 
             // ----------------------------------------
@@ -195,26 +235,37 @@ export class RepositoryImporterService {
 
             const result: RepositoryImportResult = {
 
-                projectId,
+    projectId,
 
-                projectName,
+    projectName,
 
-                sourceType: request.sourceType,
+    sourceType: request.sourceType,
 
-                status: "imported",
+    status:
+        validationReport.status === "invalid"
+            ? "failed"
+            : "imported",
 
-                workspacePath:
-                    workspace.workspacePath,
+    workspacePath:
+        workspace.workspacePath,
 
-                repositoryPath:
-                    workspace.repositoryPath,
+    repositoryPath:
+        workspace.repositoryPath,
 
-                importedAt:
-                    new Date().toISOString(),
+    importedAt:
+        new Date().toISOString(),
 
-                message:
-                    "Repository imported successfully"
-            };
+    message:
+        validationReport.status === "invalid"
+            ? "Repository imported but failed validation"
+            : "Repository imported and validated successfully",
+
+    validation:
+        validationReport,
+
+    metadata:
+        metadata
+};
 
 
             return result;

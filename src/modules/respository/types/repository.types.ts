@@ -1,4 +1,5 @@
 import { simpleGit, type SimpleGit } from "simple-git";
+import type { RepositoryMetadataService } from "../services/repository-metadata.service.js";
 
 export interface GitCloneOptions {
     branch?: string;
@@ -13,6 +14,86 @@ export interface GitRepositoryInfo {
     tag?: string;
     commit: string;
     clonePath: string;
+}
+export type RepositorySourceType =
+    | "git"
+    | "zip"
+    | "local";
+
+
+export type ImportStatus =
+    | "imported"
+    | "failed";
+
+
+export type ValidationStatus =
+    | "valid"
+    | "invalid"
+    | "warning";
+
+
+export interface RepositoryImportRequest {
+
+    sourceType: RepositorySourceType;
+
+    source: string;
+
+    branch?: string;
+
+    tag?: string;
+
+    commit?: string;
+
+    shallow?: boolean;
+}
+
+
+export interface RepositoryValidationReport {
+
+    status: ValidationStatus;
+
+    repositoryPath: string;
+
+    totalFiles: number;
+
+    totalDirectories: number;
+
+    totalSize: number;
+
+    binaryFiles: string[];
+
+    largeFiles: string[];
+
+    inaccessibleFiles: string[];
+
+    symbolicLinks: string[];
+
+    issues: string[];
+
+    validatedAt: string;
+}
+
+
+export interface RepositoryImportResult {
+
+    projectId: string;
+
+    projectName: string;
+
+    sourceType: RepositorySourceType;
+
+    status: ImportStatus;
+
+    workspacePath: string;
+
+    repositoryPath: string;
+
+    importedAt: string;
+
+    message: string;
+
+    validation?: RepositoryValidationReport;
+    metadata?: RepositoryMetadata;
 }
 
 export class GitClonerService {
@@ -162,4 +243,40 @@ export class GitClonerService {
             );
         }
     }
+}
+export interface RepositoryMetadata {
+
+    projectId: string;
+
+    projectName: string;
+
+    repositorySource:
+        | "git"
+        | "zip"
+        | "local";
+
+    importDate: string;
+
+    lastUpdated: string;
+
+    gitUrl?: string;
+
+    defaultBranch?: string;
+
+    commitHash?: string;
+
+    repositorySize: number;
+
+    numberOfFiles: number;
+
+    numberOfDirectories: number;
+
+    importStatus:
+        | "imported"
+        | "failed";
+
+    validationStatus:
+        | "valid"
+        | "invalid"
+        | "warning";
 }
