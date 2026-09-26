@@ -9,6 +9,9 @@ import type {
 import { WorkspaceManagerService } from "./workspace-manager.service.js";
 import { GitClonerService } from "./git-cloner.service.js";
 import { ZipExtractorService } from "./zip-extractor.service.js";
+import {
+    LocalDirectoryImporterService
+} from "./local-directory-importer.service.js";
 
 
 export class RepositoryImporterService {
@@ -19,6 +22,8 @@ export class RepositoryImporterService {
 
    private zipExtractor: ZipExtractorService;
 
+   private localDirectoryImporter:
+    LocalDirectoryImporterService;
 
   constructor() {
 
@@ -30,6 +35,9 @@ export class RepositoryImporterService {
 
     this.zipExtractor =
         new ZipExtractorService();
+
+    this.localDirectoryImporter =
+        new LocalDirectoryImporterService();
 }
 
 
@@ -154,11 +162,19 @@ export class RepositoryImporterService {
 
                 case "local":
 
-                    console.log(
-                        "Local Directory Importer will be implemented next."
-                    );
+    console.log(
+        "\nRouting to Local Directory Importer..."
+    );
 
-                    break;
+    await this.localDirectoryImporter.importDirectory(
+
+        request.source,
+
+        workspace.repositoryPath
+
+    );
+
+    break;
 
 
                 // ==================================
